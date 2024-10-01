@@ -17,9 +17,9 @@ jobs:
       - name: Fetch Website Status
         id: fetch_status
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
+          response=$(curl -Ls -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
           status_code=$(echo "$response" | awk '{print $1}')
-          headers=$(curl -s -I "${{ github.event.inputs.url }}" | tr '\n' ';')
+          headers=$(curl -Ls -I "${{ github.event.inputs.url }}" | tr '\n' ';')
           echo "::set-output name=status_code::$status_code"
           echo "::set-output name=headers::$headers"
 
@@ -28,11 +28,14 @@ jobs:
           status_code="${{ steps.fetch_status.outputs.status_code }}"
           headers="${{ steps.fetch_status.outputs.headers }}"
           webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
-          title="网页监控推送"
-          summary="状态码：$status_code; 概要：$headers"
+          title="网页监控"
 
-          if [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
+          if [[ "$status_code" == "302" ]]; then
+            summary="警告：返回状态码 302; 可能存在重定向; 概要：$headers"
+          elif [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
             summary="错误：返回状态码 $status_code; 概要：$headers"
+          else
+            summary="状态码：$status_code; 概要：$headers"
           fi
 
           curl -X POST "$webhook_url" \
