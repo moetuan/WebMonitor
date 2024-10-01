@@ -26,7 +26,7 @@ jobs:
           final_url="${{ steps.fetch_status.outputs.final_url }}"
           headers="${{ steps.fetch_status.outputs.headers }}"
           webhook_url="https://oapi.dingtalk.com/robot/send?access_token=你的access_token"
-          title="网页监控推送"
+          title="网页监控"
           summary="状态码：$status_code; 最终网址：$final_url; 概要：$headers"
 
           if [[ "$status_code" != "200" && "$status_code" != "301" && "$status_code" != "302" ]]; then
