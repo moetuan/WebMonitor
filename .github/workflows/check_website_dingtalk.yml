@@ -29,8 +29,10 @@ jobs:
           # 获取网页内容并提取有效文本
           content=$(lynx -dump "${{ github.event.inputs.url }}")
           
-          # 截取前200个字符
-          summary=$(echo "$content" | awk '{print substr($0,1,200)}')
+          # 清理内容并提取前200个字符
+          summary=$(echo "$content" | sed 's/^\s*//;s/\s*$//' | awk 'NR>1' | tr '\n' ' ' | sed 's/[^[:print:]]//g' | cut -c 1-200)
+          echo "Summary: $summary"  # 输出清理后的摘要
+          echo "Status code: $status_code"  # 输出状态码
           echo "::set-output name=status_code::$status_code"
           echo "::set-output name=summary::$summary"
 
