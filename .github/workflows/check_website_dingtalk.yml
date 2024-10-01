@@ -17,25 +17,29 @@ jobs:
       - name: Fetch Website Status
         id: fetch_status
         run: |
-          response=$(curl -Ls -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
+          # 获取状态码
+          response=$(curl -Ls -o /dev/null -w "%{http_code} %{url_effective}" "${{ github.event.inputs.url }}")
           status_code=$(echo "$response" | awk '{print $1}')
-          headers=$(curl -Ls -I "${{ github.event.inputs.url }}" | tr '\n' ';')
+          
+          # 获取网站实际内容并截取前20个字符
+          content=$(curl -Ls "${{ github.event.inputs.url }}" | head -c 20)
+          
           echo "::set-output name=status_code::$status_code"
-          echo "::set-output name=headers::$headers"
+          echo "::set-output name=content::$content"
 
       - name: Send to DingTalk
         run: |
           status_code="${{ steps.fetch_status.outputs.status_code }}"
-          headers="${{ steps.fetch_status.outputs.headers }}"
+          content="${{ steps.fetch_status.outputs.content }}"
           webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
-          title="网页监控推送"
+          title="网页监控"
 
           if [[ "$status_code" == "302" ]]; then
-            summary="警告：返回状态码 302; 可能存在重定向; 概要：$headers"
+            summary="警告：返回状态码 302; 可能存在重定向; 内容截取：$content"
           elif [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
-            summary="错误：返回状态码 $status_code; 概要：$headers"
+            summary="错误：返回状态码 $status_code; 内容截取：$content"
           else
-            summary="状态码：$status_code; 概要：$headers"
+            summary="状态码：$status_code; 内容截取：$content"
           fi
 
           curl -X POST "$webhook_url" \
