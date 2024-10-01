@@ -1,14 +1,9 @@
 name: Check Website Status
 
 on:
-  workflow_dispatch:
-    inputs:
-      url:
-        description: '监控的网址'
-        required: true
-      access_token:
-        description: '钉钉机器人的 Access Token'
-        required: true
+  workflow_dispatch:  # 手动触发
+  schedule:  # 定时触发
+    - cron: '*/1 * * * *'  # 每分钟执行一次
 
 jobs:
   check-status:
@@ -23,16 +18,14 @@ jobs:
         id: fetch_status
         run: |
           # 获取状态码
-          response=$(curl -Ls -o /dev/null -w "%{http_code}" "${{ github.event.inputs.url }}")
+          response=$(curl -Ls -o /dev/null -w "%{http_code}" "${{ secrets.URL }}")
           status_code="$response"
           
           # 获取网页内容并提取有效文本
-          content=$(lynx -dump "${{ github.event.inputs.url }}")
+          content=$(lynx -dump "${{ secrets.URL }}")
           
           # 清理内容并提取前200个字符
           summary=$(echo "$content" | sed 's/^\s*//;s/\s*$//' | awk 'NR>1' | tr '\n' ' ' | sed 's/[^[:print:]]//g' | cut -c 1-200)
-          echo "Summary: $summary"  # 输出清理后的摘要
-          echo "Status code: $status_code"  # 输出状态码
           echo "::set-output name=status_code::$status_code"
           echo "::set-output name=summary::$summary"
 
@@ -40,7 +33,7 @@ jobs:
         run: |
           status_code="${{ steps.fetch_status.outputs.status_code }}"
           summary="${{ steps.fetch_status.outputs.summary }}"
-          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
+          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ secrets.ACCESS_TOKEN }}"
           title="网页监控"
 
           if [[ "$status_code" == "302" ]]; then
