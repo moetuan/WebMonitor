@@ -22,7 +22,7 @@ jobs:
           status_code=$(echo "$response" | awk '{print $1}')
           
           # 获取网站实际内容并截取前20个字符
-          content=$(curl -Ls "${{ github.event.inputs.url }}" | head -c 20)
+          content=$(curl -Ls "${{ github.event.inputs.url }}" | head -c 200)
           
           echo "::set-output name=status_code::$status_code"
           echo "::set-output name=content::$content"
