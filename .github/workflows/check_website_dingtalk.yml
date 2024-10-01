@@ -14,6 +14,11 @@ jobs:
   check-status:
     runs-on: ubuntu-latest
     steps:
+      - name: Install Lynx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lynx
+
       - name: Fetch Website Status
         id: fetch_status
         run: |
@@ -21,11 +26,11 @@ jobs:
           response=$(curl -Ls -o /dev/null -w "%{http_code}" "${{ github.event.inputs.url }}")
           status_code="$response"
           
-          # 获取网页内容
-          content=$(curl -Ls "${{ github.event.inputs.url }}")
-
-          # 提取有效文本并截取前200个字符
-          summary=$(echo "$content" | sed 's/<[^>]*>//g' | awk '{print substr($0,1,2000)}')
+          # 获取网页内容并提取有效文本
+          content=$(lynx -dump "${{ github.event.inputs.url }}")
+          
+          # 截取前200个字符
+          summary=$(echo "$content" | awk '{print substr($0,1,200)}')
           echo "::set-output name=status_code::$status_code"
           echo "::set-output name=summary::$summary"
 
