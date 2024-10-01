@@ -1,0 +1,40 @@
+name: Check Website Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: '监控的网址'
+        required: true
+      access_token:
+        description: '钉钉机器人的 Access Token'
+        required: true
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Website Status
+        id: fetch_status
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
+          status_code=$(echo "$response" | awk '{print $1}')
+          headers=$(curl -s -I "${{ github.event.inputs.url }}" | tr '\n' ';')
+          echo "::set-output name=status_code::$status_code"
+          echo "::set-output name=headers::$headers"
+
+      - name: Send to DingTalk
+        run: |
+          status_code="${{ steps.fetch_status.outputs.status_code }}"
+          headers="${{ steps.fetch_status.outputs.headers }}"
+          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
+          title="网页监控"
+          summary="状态码：$status_code; 概要：$headers"
+
+          if [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
+            summary="错误：返回状态码 $status_code; 概要：$headers"
+          fi
+
+          curl -X POST "$webhook_url" \
+            -H 'Content-Type: application/json' \
+            -d "{\"msgtype\": \"markdown\", \"markdown\": {\"title\": \"$title\", \"text\": \"$summary\"}}"
