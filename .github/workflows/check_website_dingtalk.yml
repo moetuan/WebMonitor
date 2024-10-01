@@ -1,14 +1,8 @@
 name: Check Website Status
 
 on:
-  workflow_dispatch:
-    inputs:
-      url:
-        description: '监控的网址'
-        required: true
-      access_token:
-        description: '钉钉机器人的 Access Token'
-        required: true
+  schedule:
+    - cron: '*/1 * * * *'  # 每分钟执行一次
 
 jobs:
   check-status:
@@ -17,21 +11,25 @@ jobs:
       - name: Fetch Website Status
         id: fetch_status
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
+          # 使用 -L 选项跟随跳转
+          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective}" -L "https://example.com")
           status_code=$(echo "$response" | awk '{print $1}')
-          headers=$(curl -s -I "${{ github.event.inputs.url }}" | tr '\n' ';')
+          final_url=$(echo "$response" | awk '{print $2}')
+          headers=$(curl -s -I -L "https://example.com" | tr '\n' ';')
           echo "::set-output name=status_code::$status_code"
+          echo "::set-output name=final_url::$final_url"
           echo "::set-output name=headers::$headers"
 
       - name: Send to DingTalk
         run: |
           status_code="${{ steps.fetch_status.outputs.status_code }}"
+          final_url="${{ steps.fetch_status.outputs.final_url }}"
           headers="${{ steps.fetch_status.outputs.headers }}"
-          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
+          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=你的access_token"
           title="网页监控推送"
-          summary="状态码：$status_code; 概要：$headers"
+          summary="状态码：$status_code; 最终网址：$final_url; 概要：$headers"
 
-          if [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
+          if [[ "$status_code" != "200" && "$status_code" != "301" && "$status_code" != "302" ]]; then
             summary="错误：返回状态码 $status_code; 概要：$headers"
           fi
 
