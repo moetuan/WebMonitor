@@ -28,7 +28,7 @@ jobs:
           status_code="${{ steps.fetch_status.outputs.status_code }}"
           headers="${{ steps.fetch_status.outputs.headers }}"
           webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
-          title="网页监控"
+          title="网页监控推送"
 
           if [[ "$status_code" == "302" ]]; then
             summary="警告：返回状态码 302; 可能存在重定向; 概要：$headers"
