@@ -1,40 +1,41 @@
 name: Check Website Status
 
 on:
-  workflow_dispatch:
-    inputs:
-      url:
-        description: '监控的网址'
-        required: true
-      access_token:
-        description: '钉钉机器人的 Access Token'
-        required: true
+  workflow_dispatch:  # 手动触发工作流
+  schedule:
+    - cron: '*/1 * * * *'  # 每分钟执行一次
 
 jobs:
   check-status:
     runs-on: ubuntu-latest
     steps:
+      - name: Set Variables
+        id: vars
+        run: |
+          echo "URL=https://example.com" >> $GITHUB_ENV
+          echo "ACCESS_TOKEN=你的access_token" >> $GITHUB_ENV
+          
       - name: Fetch Website Status
         id: fetch_status
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective} %{time_total} %{size_download}" "${{ github.event.inputs.url }}")
-          status_code=$(echo "$response" | awk '{print $1}')
-          headers=$(curl -s -I "${{ github.event.inputs.url }}" | tr '\n' ';')
-          echo "::set-output name=status_code::$status_code"
+          response=$(curl -s -o /dev/null -w "%{http_code} %{url_effective} %{time_total}" $URL)
+          http_code=$(echo $response | cut -d ' ' -f 1)
+          headers=$(curl -s -D - -o /dev/null $URL)
+          echo "::set-output name=http_code::$http_code"
           echo "::set-output name=headers::$headers"
-
+          
       - name: Send to DingTalk
         run: |
-          status_code="${{ steps.fetch_status.outputs.status_code }}"
+          http_code="${{ steps.fetch_status.outputs.http_code }}"
           headers="${{ steps.fetch_status.outputs.headers }}"
-          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ github.event.inputs.access_token }}"
-          title="网页监控"
-          summary="状态码：$status_code; 概要：$headers"
-
-          if [[ "$status_code" != "200" && "$status_code" != "301" ]]; then
-            summary="错误：返回状态码 $status_code; 概要：$headers"
+          title="网页监控推送"
+          if [[ "$http_code" -ne 200 && "$http_code" -ne 301 ]]; then
+            content="状态码：$http_code\n概要：$headers\n错误信息：非正常响应"
+          else
+            content="状态码：$http_code\n概要：$headers"
           fi
 
+          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ env.ACCESS_TOKEN }}"
           curl -X POST "$webhook_url" \
             -H 'Content-Type: application/json' \
-            -d "{\"msgtype\": \"markdown\", \"markdown\": {\"title\": \"$title\", \"text\": \"$summary\"}}"
+            -d "{\"msgtype\": \"markdown\", \"markdown\": {\"title\": \"$title\", \"text\": \"$content\"}}"
