@@ -22,19 +22,19 @@
    
    - 群聊中创建`钉钉机器人`，选择自定义
 
- ![image](https://github.com/user-attachments/assets/69a53b32-e649-44b9-83ab-f05d0b9ad7d3)
+[![pA3s5HP.png](https://s21.ax1x.com/2024/10/02/pA3s5HP.png)](https://imgse.com/i/pA3s5HP)
  
  👇
  
- ![image](https://github.com/user-attachments/assets/30e7be8d-f6ff-4fd8-8854-8de10f892098)
+[![pA3s74S.png](https://s21.ax1x.com/2024/10/02/pA3s74S.png)](https://imgse.com/i/pA3s74S)
 
    - `安全设置` → `自定义关键词` 添加关键词 `监控`
 
-![image](https://github.com/user-attachments/assets/c07dfe5c-fd84-40ed-a5ff-e26b7a6762b0)
+[![pA3sLcj.png](https://s21.ax1x.com/2024/10/02/pA3sLcj.png)](https://imgse.com/i/pA3sLcj)
 
    - 复制`Webhook`的URL：`https://oapi.dingtalk.com/robot/send?access_token=000000000000`
 
-![image](https://github.com/user-attachments/assets/f4aec4e1-626a-4fde-9402-010f35c5d978)
+[![pA3sjun.png](https://s21.ax1x.com/2024/10/02/pA3sjun.png)](https://imgse.com/i/pA3sjun)
 
    - 删除`https://oapi.dingtalk.com/robot/send?access_token=`，只保留`access_token=`后的部分（`ACCESS_TOKEN`）
 
