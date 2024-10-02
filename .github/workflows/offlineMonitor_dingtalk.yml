@@ -1,0 +1,43 @@
+name: Check Website Status
+
+on:
+  schedule:  # 定时触发
+    - cron: '*/5 * * * *'  # 每分钟执行一次
+
+jobs:
+  check-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Lynx
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lynx
+
+      - name: Fetch Website Status
+        id: fetch_status
+        run: |
+          # 获取状态码
+          response=$(curl -Ls -o /dev/null -w "%{http_code}" "${{ secrets.URL }}")
+          status_code="$response"
+          
+          # 获取网页内容并提取有效文本
+          content=$(lynx -dump "${{ secrets.URL }}")
+          
+          # 清理内容并提取前200个字符
+          summary=$(echo "$content" | sed 's/^\s*//;s/\s*$//' | awk 'NR>1' | tr '\n' ' ' | sed 's/[^[:print:]]//g' | cut -c 1-200)
+          echo "::set-output name=status_code::$status_code"
+          echo "::set-output name=summary::$summary"
+
+      - name: Send to DingTalk
+        if: ${{ steps.fetch_status.outputs.status_code != '200' && steps.fetch_status.outputs.status_code != '301' && steps.fetch_status.outputs.status_code != '302' }}
+        run: |
+          status_code="${{ steps.fetch_status.outputs.status_code }}"
+          summary="${{ steps.fetch_status.outputs.summary }}"
+          webhook_url="https://oapi.dingtalk.com/robot/send?access_token=${{ secrets.ACCESS_TOKEN }}"
+          title="站点可能离线！- 网页监控推送"
+
+          summary="错误：返回状态码 $status_code; 内容摘要：$summary"
+
+          curl -X POST "$webhook_url" \
+            -H 'Content-Type: application/json' \
+            -d "{\"msgtype\": \"markdown\", \"markdown\": {\"title\": \"$title\", \"text\": \"$summary\"}}"
