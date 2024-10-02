@@ -1,9 +1,9 @@
-name: Check Website Status
+name: Check Website Status # 每五分钟拉取网站状态与摘要并推送消息
 
 on:
   workflow_dispatch:  # 手动触发
   schedule:  # 定时触发
-    - cron: '*/1 * * * *'  # 每分钟执行一次
+    - cron: '*/5 * * * *'  # 每分钟执行一次
 
 jobs:
   check-status:
